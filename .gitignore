@@ -1,0 +1,14 @@
+# Environments
+.env
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Odoo / SQLite
+*.db
+*.sqlite3
+
+# OS generated files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_monthly_timesheet" model="ir.actions.report">
+        <field name="name">Monthly Timesheet Report</field>
+        <field name="model">employee.monthly.timesheet</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">timesheet_automation.report_monthly_timesheet_template</field>
+        <field name="report_file">timesheet_automation.report_monthly_timesheet_template</field>
+        <field name="print_report_name">'Timesheet - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_employee_monthly_timesheet"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_monthly_timesheet_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Monthly Timesheet: <span t-field="doc.name"/></h2>
+                        <div class="row mt32 mb32">
+                            <div class="col-3">
+                                <strong>Employee:</strong>
+                                <p t-field="doc.employee_id"/>
+                            </div>
+                            <div class="col-3">
+                                <strong>Department:</strong>
+                                <p t-field="doc.department_id"/>
+                            </div>
+                            <div class="col-3">
+                                <strong>Status:</strong>
+                                <p t-field="doc.state"/>
+                            </div>
+                            <div class="col-3">
+                                <strong>Total Hours:</strong>
+                                <p t-field="doc.total_hours"/>
+                            </div>
+                        </div>
+
+                        <table class="table table-sm o_main_table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Project</th>
+                                    <th>Task</th>
+                                    <th>Description</th>
+                                    <th class="text-right">Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.line_ids" t-as="line">
+                                    <t t-if="line.hours > 0">
+                                        <tr>
+                                            <td><span t-field="line.date"/></td>
+                                            <td><span t-field="line.project_id.name"/></td>
+                                            <td><span t-field="line.task_id.name"/></td>
+                                            <td><span t-field="line.description"/></td>
+                                            <td class="text-right"><span t-field="line.hours"/></td>
+                                        </tr>
+                                    </t>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

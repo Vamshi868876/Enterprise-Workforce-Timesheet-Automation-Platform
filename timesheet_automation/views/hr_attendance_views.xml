@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_attendance_view_form_inherit_break" model="ir.ui.view">
+        <field name="name">hr.attendance.form.inherit.break</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='check_out']" position="after">
+                <field name="is_break_started"/>
+                <field name="break_start" readonly="1"/>
+                <field name="is_break_ended"/>
+                <field name="break_end" readonly="1"/>
+                <field name="is_timesheet_processed" readonly="1" groups="base.group_no_one"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_attendance_view_tree_inherit_break" model="ir.ui.view">
+        <field name="name">hr.attendance.tree.inherit.break</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.view_attendance_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='check_out']" position="after">
+                <field name="is_break_started" string="Take Break"/>
+                <field name="break_start" optional="show" readonly="1"/>
+                <field name="is_break_ended" string="Back from Break"/>
+                <field name="break_end" optional="show" readonly="1"/>
+                <field name="is_timesheet_processed" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

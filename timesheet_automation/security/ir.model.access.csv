@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_employee_monthly_timesheet_user,employee.monthly.timesheet.user,model_employee_monthly_timesheet,base.group_user,1,1,1,1
+access_employee_monthly_timesheet_line_user,employee.monthly.timesheet.line.user,model_employee_monthly_timesheet_line,base.group_user,1,1,1,1
+access_employee_monthly_timesheet_manager,employee.monthly.timesheet.manager,model_employee_monthly_timesheet,hr.group_hr_manager,1,1,1,1
+access_employee_monthly_timesheet_line_manager,employee.monthly.timesheet.line.manager,model_employee_monthly_timesheet_line,hr.group_hr_manager,1,1,1,1
