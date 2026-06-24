@@ -1,54 +1,91 @@
-# Odoo Timesheet Automation Architecture
+# Odoo Timesheet & Attendance Automation Ecosystem
 
-## About The Project
+> [!NOTE]
+> This project provides an enterprise-grade, highly secure Attendance and Timesheet synchronization architecture for the Odoo ERP environment. It eliminates the need for manual timesheet entries by capturing real-time employee attendance events and utilizing a background synchronization daemon to calculate actual worked hours.
 
-This project provides a robust, fully-automated Attendance and Timesheet synchronization system built for the Odoo ERP environment. It eliminates the need for manual timesheet entries by capturing real-time employee attendance events (Check-in, Take Break, Back from Break, Check-out) and utilizing a background synchronization daemon to calculate real worked hours and automatically generate locked Analytic Timesheets.
+## 👤 Author
+**Vamshi Batthula**  
+📧 batthulavamshi740@gmail.com
 
-## Key Topics & Technologies
-- **Odoo XML-RPC API**: Seamless integration with Odoo's backend to execute automated record updates.
-- **Background Daemon Processing**: A continuous Python loop script (`attendance_sync_daemon.py`) that synchronizes and batches data every 24 hours (or via `--run-now` flag).
-- **Time Calculations**: Accurate tracking of exact break durations, subtracting them from total shift time to determine pure worked hours.
-- **Flask REST API**: Backend server interface (`app.py`) providing lightweight endpoints for external integrations.
-- **Environment Security**: Usage of `.env` configuration for safe handling of API credentials and database connection strings.
+---
 
-## Architecture & Workflow
+## 🏗️ System Architecture & Workflow
 
-1. **Employee Interface (Odoo UI / Kiosk Mode)**:
-   - Employees check in/out via standard Odoo buttons or Kiosk mode to capture the exact system timestamp.
-   - For breaks, custom automation UI rules capture the real-time exact system clock, preventing manual data tampering.
+The architecture is divided into two primary subsystems: the **Frontend UI Automation Engine** and the **Backend Timesheet Synchronization Daemon**. 
 
-2. **Data Aggregation**:
-   - The Attendance Sync Daemon connects to the Odoo backend using `xmlrpc.client`.
-   - It fetches all raw attendance records for a given month that have not yet been marked as `x_is_timesheet_processed`.
+```mermaid
+graph TD
+    subgraph Frontend: Odoo UI & Automation Rules
+        A[Employee] -->|Check-In via Kiosk/UI| B(Raw HR Attendance Record)
+        A -->|Ticks 'Take Break'| C{UI Automation Rule}
+        C -->|Instantly bypasses STORE_ATTR| D[Record Exact Break Start Time]
+        A -->|Ticks 'Back from Break'| E{UI Automation Rule}
+        E -->|Instantly bypasses STORE_ATTR| F[Record Exact Break End Time]
+        A -->|Ticks 'Mark Check Out'| G{UI Automation Rule}
+        G -->|Instantly updates record| H[Record Shift End Time]
+        
+        D --> B
+        F --> B
+        H --> B
+    end
+    
+    subgraph Backend: Python Sync Daemon
+        I((Sync Daemon)) -->|Executes Nightly / Manual Trigger| B
+        I -->|1. Authenticate & Fetch via XML-RPC| J[Filter Unprocessed Attendances]
+        J -->|2. Compute Shift Duration| K[Total Hours = Check Out - Check In]
+        K -->|3. Deduct Break Time| L[Net Worked Hours = Total - Break]
+        L -->|4. Database Write| M[(Odoo Analytic Timesheet Line)]
+        M -->|5. Security Lock| N[Mark Attendances as Processed]
+    end
+```
 
-3. **Timesheet Processing Engine**:
-   - Computes Total Shift Hours (`check_out` - `check_in`).
-   - Computes Total Break Hours (`x_break_end` - `x_break_start`).
-   - Calculates **Net Worked Hours**.
-   - Generates a consolidated `account.analytic.line` timesheet entry for the employee for that specific month, mapped to their default project.
-   - Flags the raw attendance lines as processed (`x_is_timesheet_processed = True`) to ensure idempotency and prevent duplicate billing.
+### 1. Frontend UI Automation Engine
+To prevent manual data tampering and assure high data integrity, the system utilizes Odoo's `On UI Change` automation triggers. 
+- **Real-Time Capture**: Custom Boolean Checkboxes (`x_take_break`, `x_back_from_break`, `x_do_check_out`) are injected into the Odoo UI.
+- **Secure Timestamping**: When an employee interacts with these checkboxes, Odoo's internal `safe_eval` environment directly invokes a `record.update()` bypass method, assigning the exact `datetime.now()` server time to the underlying models instantly.
 
-## How to Run
+### 2. Backend Timesheet Synchronization Daemon
+A fault-tolerant Python daemon (`attendance_sync_daemon.py`) that operates externally via Odoo's XML-RPC API.
+- **Idempotent Processing**: Scans for attendances where `x_is_timesheet_processed = False`.
+- **Time Calculations**: Extrapolates total shift seconds, subtracts the recorded break seconds, and converts to precision float hours.
+- **Record Generation & Locking**: Automatically provisions `account.analytic.line` timesheet entries tied to the employee's default project, and permanently locks the source attendance records to prevent duplicate billing.
 
-1. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+---
 
-2. **Configure Environment**:
-   Ensure your `.env` file is properly configured with your Odoo server URL, Database name, Username, and Password.
+## 🛠️ Key Technologies & Stack
+- **Odoo XML-RPC API**: Robust external communication protocol.
+- **Python 3**: Core backend execution environment.
+- **Background Daemon Processing**: Continuous loop execution using the standard `time` library.
+- **Flask REST API**: A lightweight routing API (`app.py`) built to scale into external dashboard integrations.
+- **Environment Security**: Usage of `python-dotenv` for encrypted `.env` injection of Odoo credentials.
 
-3. **Run the Daemon**:
-   - To run a manual, immediate synchronization of all records:
-     ```bash
-     python attendance_sync_daemon.py --run-now
-     ```
-   - To run as a continuous background daemon (checks every 24 hours):
-     ```bash
-     python attendance_sync_daemon.py
-     ```
+## 🚀 Deployment & Usage
 
-4. **Run the API Server (Optional)**:
-   ```bash
-   python app.py
-   ```
+### 1. Environment Setup
+Create a `.env` file in the root directory (ignored by git):
+```env
+ODOO_URL=http://your-odoo-instance:8069
+ODOO_DB=your_database
+ODOO_USERNAME=admin
+ODOO_PASSWORD=your_secure_password
+```
+
+### 2. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Run the Processing Engine
+**Continuous Background Daemon** (Runs every 24 hours):
+```bash
+python attendance_sync_daemon.py
+```
+**Manual Override / Immediate Sync**:
+```bash
+python attendance_sync_daemon.py --run-now
+```
+
+### 4. Run the API Server (Optional)
+```bash
+python app.py
+```
